@@ -4,3 +4,6 @@ outputfiles
 __pycache__
 TGI.ipynb
 Algorithm.ipynb
+.ipynb_checkpoints
+test.py
+expected_gradient.py
