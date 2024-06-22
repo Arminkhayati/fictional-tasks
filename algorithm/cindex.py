@@ -4,14 +4,15 @@ from tqdm import trange
 class Cindex(torch.nn.Module):
     def __init__(self):
         super(Cindex, self).__init__()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def forward(self, y, y_hat, status):
         if not torch.is_tensor(y):
-            y = torch.Tensor(y).to("cuda")
+            y = torch.Tensor(y).to(self.device)
         if not torch.is_tensor(y_hat):
-            y_hat = torch.Tensor(y_hat).to("cuda")
+            y_hat = torch.Tensor(y_hat).to(self.device)
         if not torch.is_tensor(status):
-            status = torch.Tensor(status).to("cuda")
+            status = torch.Tensor(status).to(self.device)
 
         N = y.size(0)
         total_pairs = 0

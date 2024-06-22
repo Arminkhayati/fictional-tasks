@@ -27,3 +27,15 @@ I implemented the requested algorithm using two attribution methods:
 
 - Gradient of inputs
 - Expected Gradients
+
+
+
+Based on your feedback regarding the c-index value, I have thoroughly investigated the model, dataset, and other evaluation metrics. Here are my findings:
+
+Initially, I replaced the random data splitting method with a stratified approach based on events. This revealed an imbalance in the data across different time intervals. Since we are grouping times into seven buckets, the data counts for each bucket are as follow.
+
+As evident, the initial buckets dominate, as often seen in survival data. This dominance implies that the model may face challenges in effectively learning from the later buckets.
+
+Additionally, I implemented a learning rate scheduler, early stopping, and best model checkpointing based on the best validation loss. With these setups, I trained the model under three conditions: without any attribution regularization term, with expected gradient as the attribution method, and with only gradient as the attribution method. I calculated C-Index and Integrated Brier Score for these three models. I also modiefied C-Index calculation function to work faster.
+
+Since the model without any regularization term yields almost the same c-index value, and considering that, based on your initial instructions, the data preprocessing and evaluation metrics implementations are correct, I believe there is no problem with the training process.
