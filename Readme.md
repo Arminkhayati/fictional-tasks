@@ -39,3 +39,5 @@ As evident, the initial buckets dominate, as often seen in survival data. This d
 Furthermore, I implemented a learning rate scheduler, early stopping, and best model checkpointing based on the best validation loss. With these setups, I trained the model under three conditions: without any attribution regularization term, with expected gradient as the attribution method, and with only gradient as the attribution method. I calculated C-Index and Integrated Brier Score for these three models.  Additionally, I optimized the C-Index calculation function for efficiency and restructured the code into a package for improved organization.
 
 Since the model without any regularization term yields almost the same c-index value, and considering that, based on your initial instructions, the data preprocessing and evaluation metrics implementations are correct, I believe there is no problem with the training process.
+
+I also tested two models from sksurv package on our data and achieved almost same C-Index and Brier Score. (Code in `Playground` notebook.)
