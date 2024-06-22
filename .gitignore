@@ -3,8 +3,7 @@ outputfiles
 .idea
 __pycache__
 TGI.ipynb
-Algorithm.ipynb
 .ipynb_checkpoints
 test.py
-expected_gradient.py
-Algorithm_imp (2).ipynb
+test.ipynb
+old
