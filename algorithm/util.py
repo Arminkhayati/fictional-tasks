@@ -40,29 +40,30 @@ def brier_score(event_all, Y_all, target_events, Y_true_target, target_predictio
     dtype = [('cens', bool), ('time', int)]
     # Create the structured array
     all_array = np.array(list(zip(event_all.astype(bool), Y_all.sum(axis=1).cpu())), dtype=dtype)
-    target_array = np.array(list(zip(target_events.cpu().numpy().astype(bool), Y_true_target.cpu())), dtype=dtype)
-    _times = np.arange(1, Y_true_target.cpu().max())
-    probs = np.column_stack([item.cpu().numpy() for item in target_predictions])
+    target_array = np.array(list(zip(target_events.astype(bool), Y_true_target)), dtype=dtype)
+    _times = np.arange(1, Y_true_target.max())
+    probs = target_predictions #np.column_stack([item.cpu().numpy() for item in target_predictions])
     return integrated_brier_score(all_array, target_array, probs[:, 1:7], _times)
 
-def true_values_from_data_loader(data_loader):
-    trues = []
-    statuses = []
-    for _, targets, masks, status in data_loader:
-        true_label = [targets[i] * masks[i] for i in range(len(targets))]
-        trues.append(true_label)
-        statuses.append(status)
+# def true_values_from_data_loader(data_loader):
+#     trues = []
+#     statuses = []
+#     for _, targets, masks, status in data_loader:
+#         true_label = [targets[i] * masks[i] for i in range(len(targets))]
+#         trues.append(true_label)
+#         statuses.append(status)
+#
+#     trues = [torch.cat([preds[i] for preds in trues]) for i in range(len(trues[0]))]
+#     statuses = torch.cat([status for status in statuses])
+#     Y_true = binarize_and_sum_columns(trues)
+#     Y_true = Y_true.squeeze()
+#
+#     return statuses, Y_true
 
-    trues = [torch.cat([preds[i] for preds in trues]) for i in range(len(trues[0]))]
-    statuses = torch.cat([status for status in statuses])
-    Y_true = binarize_and_sum_columns(trues)
-    Y_true = Y_true.squeeze()
-
-    return statuses, Y_true
-
-def unique_value_counts(tensor):
+def unique_value_counts(np_array):
     # Convert the PyTorch tensor to a NumPy array
-    np_array = tensor.cpu().numpy()
+    if torch.is_tensor(np_array):
+        np_array = np_array.cpu().numpy()
 
     # Use np.unique to get unique values and their counts
     unique_values, counts = np.unique(np_array, return_counts=True)

@@ -7,6 +7,7 @@ from tqdm import trange
 from algorithm.expected_gradient_multi_task import AttributionPriorExplainer
 from torch.nn.utils import clip_grad_norm_
 from algorithm.util import binarize_and_sum_columns
+import numpy as np
 
 class GradientTrainer:
     def __init__(self, model, train_loader, test_loader, args):
@@ -139,17 +140,22 @@ class GradientTrainer:
 
     def predict(self, data_loader):
         self.model.eval()
-        predictions = []
+        predictions = np.zeros((len(data_loader) * self.args.batch_size, self.model.num_tasks))
+        Y_true = np.zeros((len(data_loader) * self.args.batch_size, self.model.num_tasks))
+        events = np.zeros((len(data_loader) * self.args.batch_size))
         # Disable gradient calculations
         with torch.no_grad():
-            for X_test, _, _, _ in data_loader:
+            for i, (X, targets, _, status) in enumerate(data_loader):
                 # Forward pass
-                X_test = X_test.to(self.device)
-                task_outputs_ = self.model(X_test)
-                # Store the predictions
-                predictions.append(task_outputs_)
-        predictions = [torch.cat([preds[i] for preds in predictions]) for i in
-                            range(len(predictions[0]))]
-        Y_hat = binarize_and_sum_columns(predictions)
-        Y_hat = Y_hat.squeeze()
-        return predictions, Y_hat
+                X = X.to(self.device)
+                task_outputs_ = self.model(X)
+                events[self.args.batch_size * i: (self.args.batch_size * (i + 1))] = status.cpu().numpy()
+                for j, task_output in enumerate(task_outputs_):
+                    predictions[self.args.batch_size * i: (self.args.batch_size * (i + 1)), j] = \
+                        task_output.cpu().numpy()[:, 0]
+                    Y_true[self.args.batch_size * i: (self.args.batch_size * (i + 1)), j] = \
+                        targets[j].cpu().numpy()[:, 0]
+        Y_true = np.sum(Y_true, axis=1)
+        Y_hat = (predictions > 0.5).astype(int)
+        Y_hat = np.sum(Y_hat, axis=1)
+        return predictions, Y_hat, Y_true, events
