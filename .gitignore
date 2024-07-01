@@ -4,7 +4,8 @@ outputfiles
 __pycache__
 TGI.ipynb
 .ipynb_checkpoints
-test.py
-test.ipynb
+old/test.py
+old/test.ipynb
 old
-Algorithm_imp_.ipynb
+old/Algorithm_imp_.ipynb
+test3.ipynb

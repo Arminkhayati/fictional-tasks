@@ -38,14 +38,15 @@ class MultiTaskModel(nn.Module):
 
         return task_outputs# Here I difined the S(x)
 
-    # Modified by Jingyan
     def custom_loss(self, task_outputs, targets, masks):
         loss = 0
         for i, task_output in enumerate(task_outputs):
             task_target = targets[i]
+            # task_mask = masks[i].to(torch.bool)
+            # task_loss = F.binary_cross_entropy(task_output[task_mask] , task_target[task_mask].float(), reduction='sum')
+            # loss += task_loss / task_mask.sum().item()
             task_mask = masks[i]
             task_loss = F.binary_cross_entropy(task_output, task_target.float(), reduction='none')
-            task_loss = task_loss * task_mask.float() # [2048, 1]
-            # print('task_loss', task_loss.shape)
+            task_loss = task_loss * task_mask.float()
             loss += task_loss.sum() / task_mask.sum()
         return loss

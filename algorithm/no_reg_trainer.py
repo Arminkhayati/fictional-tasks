@@ -44,25 +44,25 @@ class NoRegularizationTrainer:
                 targets = [target.to(self.device) for target in targets]
                 masks = [mask.to(self.device) for mask in masks]
 
-                self.optimizer.zero_grad()
-                task_outputs = self.model(X_train)
 
+                task_outputs = self.model(X_train)
                 loss = self.model.custom_loss(task_outputs, targets, masks)
+                self.optimizer.zero_grad()
                 loss.backward(retain_graph=True)
 
-                total_norm = 0
-                for param in self.model.parameters():
-                    param_norm = param.grad.data.norm(2)
-                    total_norm += param_norm.item() ** 2
-                total_norm = total_norm ** (1. / 2)
-                gradient_norms.append(total_norm)
-
-                clip_grad_norm_(self.model.parameters(), max_norm=self.clip)
+                # total_norm = 0
+                # for param in self.model.parameters():
+                #     param_norm = param.grad.data.norm(2)
+                #     total_norm += param_norm.item() ** 2
+                # total_norm = total_norm ** (1. / 2)
+                # gradient_norms.append(total_norm)
+                #
+                # clip_grad_norm_(self.model.parameters(), max_norm=self.clip)
                 self.optimizer.step()
                 running_loss += loss.item()
 
             avg_loss = running_loss / len(self.train_loader)
-            avg_grad_norm = sum(gradient_norms) / len(gradient_norms)
+            avg_grad_norm = 0 # sum(gradient_norms) / len(gradient_norms)
             print(
                 f'End of Epoch {epoch}, Average Training Loss: {avg_loss:.4f}, Average Gradient Norm: {avg_grad_norm:.4f}')
 
@@ -122,10 +122,11 @@ class NoRegularizationTrainer:
         self.model.eval()
         predictions = np.zeros((len(data_loader) * self.args.batch_size, self.model.num_tasks))
         Y_true = np.zeros((len(data_loader) * self.args.batch_size, self.model.num_tasks))
+        all_masks = np.zeros((len(data_loader) * self.args.batch_size, self.model.num_tasks))
         events = np.zeros((len(data_loader) * self.args.batch_size))
         # Disable gradient calculations
         with torch.no_grad():
-            for i, (X, targets, _, status) in enumerate(data_loader):
+            for i, (X, targets, masks, status) in enumerate(data_loader):
                 # Forward pass
                 X = X.to(self.device)
                 task_outputs_ = self.model(X)
@@ -134,9 +135,41 @@ class NoRegularizationTrainer:
                     predictions[self.args.batch_size * i: (self.args.batch_size * (i + 1)), j] = \
                         task_output.cpu().numpy()[:, 0]
                     Y_true[self.args.batch_size * i: (self.args.batch_size * (i + 1)), j] = \
-                        targets[j].cpu().numpy()[:,0]
-        Y_true = np.sum(Y_true, axis=1)
+                        targets[j].cpu().numpy()[:, 0]
+                    all_masks[self.args.batch_size * i: (self.args.batch_size * (i + 1)), j] = \
+                        masks[j].cpu().numpy()[:, 0]
+        # Y_true = np.multiply(Y_true, all_masks)
+        Y_true = np.sum(Y_true[:, :], axis=1)
         Y_hat = (predictions > 0.5).astype(int)
-        Y_hat = np.sum(Y_hat, axis=1)
+        Y_hat = np.sum(Y_hat[:, :], axis=1)
         return predictions, Y_hat, Y_true, events
+
+    # def predict(self, data_loader):
+    #     self.model.eval()
+    #     predictions = np.zeros((len(data_loader) * self.args.batch_size, self.model.num_tasks))
+    #     Y_true = np.zeros((len(data_loader) * self.args.batch_size, self.model.num_tasks))
+    #     all_masks = np.zeros((len(data_loader) * self.args.batch_size, self.model.num_tasks))
+    #     events = np.zeros((len(data_loader) * self.args.batch_size))
+    #     # Disable gradient calculations
+    #     with torch.no_grad():
+    #         for i, (X, targets, masks, status) in enumerate(data_loader):
+    #             # Forward pass
+    #             X = X.to(self.device)
+    #             task_outputs_ = self.model(X)
+    #             events[self.args.batch_size * i: (self.args.batch_size * (i + 1))] = status.cpu().numpy()
+    #             for j, task_output in enumerate(task_outputs_):
+    #                 predictions[self.args.batch_size * i: (self.args.batch_size * (i + 1)), j] = \
+    #                     task_output.cpu().numpy()[:, 0]
+    #                 Y_true[self.args.batch_size * i: (self.args.batch_size * (i + 1)), j] = \
+    #                     targets[j].cpu().numpy()[:, 0]
+    #                 all_masks[self.args.batch_size * i: (self.args.batch_size * (i + 1)), j] = \
+    #                     masks[j].cpu().numpy()[:, 0]
+    #
+    #     for i in range(1, predictions.shape[1]):
+    #         predictions[:, i] = np.multiply(predictions[:, i-1] , predictions[:, i])
+    #     Y_true = np.multiply(Y_true, all_masks)
+    #     Y_true = np.sum(Y_true, axis=1)
+    #     Y_hat = (predictions > 0.5).astype(int)
+    #     Y_hat = np.sum(Y_hat, axis=1)
+    #     return predictions, Y_hat, Y_true, events
 
